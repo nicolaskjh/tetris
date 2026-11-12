@@ -5,15 +5,22 @@ type t =
   { board : Board.t
   ; active_piece : Piece.t
   ; next_piece : piece_kind
+  ; randomizer : Randomizer.t
   ; score : int
   ; lines_cleared : int
   ; phase : phase
   }
 
-let create ?(first_piece = T) ?(next_piece = I) () =
+let create ?(seed = 1) ?first_piece ?next_piece () =
+  let randomizer = Randomizer.create ~seed in
+  let generated_first_piece, randomizer = Randomizer.next randomizer in
+  let generated_next_piece, randomizer = Randomizer.next randomizer in
+  let first_piece = Option.value first_piece ~default:generated_first_piece in
+  let next_piece = Option.value next_piece ~default:generated_next_piece in
   { board = Board.empty ()
   ; active_piece = Piece.spawn first_piece
   ; next_piece
+  ; randomizer
   ; score = 0
   ; lines_cleared = 0
   ; phase = Playing
@@ -37,11 +44,13 @@ let points_for_lines = function
 let lock_piece state =
   let board = Board.place state.board state.active_piece in
   let board, cleared_lines = Board.clear_complete_lines board in
+  let next_piece, randomizer = Randomizer.next state.randomizer in
   let active_piece = Piece.spawn state.next_piece in
   let phase = if Board.can_place board active_piece then Playing else Game_over in
-  { state with
-    board
+  { board
   ; active_piece
+  ; next_piece
+  ; randomizer
   ; score = state.score + points_for_lines cleared_lines
   ; lines_cleared = state.lines_cleared + cleared_lines
   ; phase
