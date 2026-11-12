@@ -33,3 +33,22 @@ let place board piece =
   List.iter (Piece.squares piece) ~f:(fun ({ column; row } : coordinate) ->
     board.(storage_row row).(column) <- Filled);
   board
+
+let row_is_full board row =
+  List.for_all (List.range 0 width) ~f:(fun column ->
+    match cell board { column; row } with
+    | Empty -> false
+    | Filled -> true)
+
+let clear_complete_lines board =
+  let rows_to_keep =
+    List.filter (List.range first_row (last_row + 1)) ~f:(fun row ->
+      row < 0 || not (row_is_full board row))
+  in
+  let cleared_lines = storage_height - List.length rows_to_keep in
+  let cleared_board = empty () in
+  let destination_row = ref last_row in
+  List.iter (List.rev rows_to_keep) ~f:(fun source_row ->
+    cleared_board.(storage_row !destination_row) <- Array.copy board.(storage_row source_row);
+    destination_row := !destination_row - 1);
+  cleared_board, cleared_lines
