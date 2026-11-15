@@ -29,7 +29,7 @@ let render_row (game : Game.t) row =
   let contents =
     String.init Board.width ~f:(fun column -> character_at game { column; row })
   in
-  if row < 0 then contents ^ "\n" else "|" ^ contents ^ "|\n"
+  if row < 0 then " " ^ contents ^ "\n" else "|" ^ contents ^ "|\n"
 
 let border = "+" ^ String.make Board.width '-' ^ "+\n"
 
