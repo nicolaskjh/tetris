@@ -59,6 +59,16 @@ let rotate_clockwise piece =
   in
   { piece with rotation }
 
+let rotate_counterclockwise piece =
+  let rotation =
+    match piece.rotation with
+    | Spawn -> Left
+    | Right -> Spawn
+    | Reverse -> Right
+    | Left -> Reverse
+  in
+  { piece with rotation }
+
 let clockwise_kicks piece =
   let kick columns rows = { columns; rows } in
   match piece.kind, piece.rotation with
@@ -118,4 +128,65 @@ let clockwise_kicks piece =
       ; kick (-2) 0
       ; kick 1 2
       ; kick (-2) (-1)
+      ]
+
+let counterclockwise_kicks piece =
+  let kick columns rows = { columns; rows } in
+  match piece.kind, piece.rotation with
+  | O, _ -> [ kick 0 0 ]
+  | (J | L | S | T | Z), Spawn ->
+      [ kick 0 0
+      ; kick 1 0
+      ; kick 1 (-1)
+      ; kick 0 2
+      ; kick 1 2
+      ]
+  | (J | L | S | T | Z), Right ->
+      [ kick 0 0
+      ; kick 1 0
+      ; kick 1 1
+      ; kick 0 (-2)
+      ; kick 1 (-2)
+      ]
+  | (J | L | S | T | Z), Reverse ->
+      [ kick 0 0
+      ; kick (-1) 0
+      ; kick (-1) (-1)
+      ; kick 0 2
+      ; kick (-1) 2
+      ]
+  | (J | L | S | T | Z), Left ->
+      [ kick 0 0
+      ; kick (-1) 0
+      ; kick (-1) 1
+      ; kick 0 (-2)
+      ; kick (-1) (-2)
+      ]
+  | I, Spawn ->
+      [ kick 0 0
+      ; kick (-1) 0
+      ; kick 2 0
+      ; kick (-1) (-2)
+      ; kick 2 1
+      ]
+  | I, Right ->
+      [ kick 0 0
+      ; kick 2 0
+      ; kick (-1) 0
+      ; kick 2 (-1)
+      ; kick (-1) 2
+      ]
+  | I, Reverse ->
+      [ kick 0 0
+      ; kick 1 0
+      ; kick (-2) 0
+      ; kick 1 2
+      ; kick (-2) (-1)
+      ]
+  | I, Left ->
+      [ kick 0 0
+      ; kick (-2) 0
+      ; kick 1 0
+      ; kick (-2) 1
+      ; kick 1 (-2)
       ]

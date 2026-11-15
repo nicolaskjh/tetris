@@ -32,6 +32,7 @@ type action =
   | Move_left
   | Move_right
   | Rotate_clockwise
+  | Rotate_counterclockwise
   | Soft_drop
   | Hard_drop
   | Hold

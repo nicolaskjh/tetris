@@ -8,6 +8,7 @@ let command_of_char = function
   | 'a' -> Some (Game_action Move_left)
   | 'd' -> Some (Game_action Move_right)
   | 'w' -> Some (Game_action Rotate_clockwise)
+  | 'z' -> Some (Game_action Rotate_counterclockwise)
   | 's' -> Some (Game_action Soft_drop)
   | ' ' -> Some (Game_action Hard_drop)
   | 'c' -> Some (Game_action Hold)

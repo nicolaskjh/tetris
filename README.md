@@ -19,6 +19,7 @@ The game runs in an alternate terminal screen. Press Esc to leave it.
 | Left / `A` | Move left |
 | Right / `D` | Move right |
 | Up / `W` | Rotate clockwise |
+| `Z` | Rotate counterclockwise |
 | Down / `S` | Soft drop |
 | Space | Hard drop |
 | `C` | Hold / swap piece |

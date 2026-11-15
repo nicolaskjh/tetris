@@ -167,6 +167,18 @@ let test_i_piece_kicks_away_from_the_right_wall () =
   assert (match game.active_piece.rotation with Reverse -> true | _ -> false);
   assert (game.active_piece.origin.column = 7)
 
+let test_i_piece_kicks_away_from_the_right_wall_counterclockwise () =
+  let game = Tetris.Game.create ~first_piece:I ~next_piece:O () in
+  let game =
+    List.fold (List.range 0 3) ~init:game ~f:(fun game _ ->
+      Tetris.Game.apply_action game Move_right)
+  in
+  let game = Tetris.Game.apply_action game Rotate_clockwise in
+  let game = Tetris.Game.apply_action game Move_right in
+  let game = Tetris.Game.apply_action game Rotate_counterclockwise in
+  assert (match game.active_piece.rotation with Spawn -> true | _ -> false);
+  assert (game.active_piece.origin.column = 7)
+
 let test_t_piece_kicks_up_from_the_floor () =
   let game = Tetris.Game.create ~first_piece:T ~next_piece:O () in
   let game = Tetris.Game.apply_action game Rotate_clockwise in
@@ -240,6 +252,7 @@ let () =
   test_lock_delay_resets_are_capped ();
   test_custom_rules_control_lock_delay ();
   test_i_piece_kicks_away_from_the_right_wall ();
+  test_i_piece_kicks_away_from_the_right_wall_counterclockwise ();
   test_t_piece_kicks_up_from_the_floor ();
   test_rotation_fails_when_every_kick_is_blocked ();
   test_scoring_for_line_clears ()
