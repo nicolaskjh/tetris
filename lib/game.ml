@@ -11,10 +11,12 @@ type t =
   ; score : int
   ; lines_cleared : int
   ; grounded_ticks : int
+  ; lock_resets : int
   ; phase : phase
   }
 
 let lock_delay_ticks = 2
+let max_lock_resets = 15
 
 let create ?(seed = 1) ?first_piece ?next_piece () =
   let randomizer = Randomizer.create ~seed in
@@ -31,6 +33,7 @@ let create ?(seed = 1) ?first_piece ?next_piece () =
   ; score = 0
   ; lines_cleared = 0
   ; grounded_ticks = 0
+  ; lock_resets = 0
   ; phase = Playing
   }
 
@@ -40,9 +43,18 @@ let try_move state ~columns ~rows =
 
 let reset_lock_delay state = { state with grounded_ticks = 0 }
 
+let is_grounded state =
+  let below = Piece.move state.active_piece ~columns:0 ~rows:1 in
+  not (Board.can_place state.board below)
+
+let reset_lock_delay_after_player_action state moved =
+  if is_grounded state && state.lock_resets < max_lock_resets
+  then { moved with grounded_ticks = 0; lock_resets = state.lock_resets + 1 }
+  else moved
+
 let move_if_possible state ~columns ~rows =
   match try_move state ~columns ~rows with
-  | Some moved -> reset_lock_delay moved
+  | Some moved -> reset_lock_delay_after_player_action state moved
   | None -> state
 
 let try_rotate state =
@@ -53,7 +65,7 @@ let try_rotate state =
 
 let rotate_if_possible state =
   match try_rotate state with
-  | Some rotated -> reset_lock_delay rotated
+  | Some rotated -> reset_lock_delay_after_player_action state rotated
   | None -> state
 
 let points_for_lines = function
@@ -66,7 +78,7 @@ let points_for_lines = function
 let spawn_piece state kind =
   let active_piece = Piece.spawn kind in
   let phase = if Board.can_place state.board active_piece then Playing else Game_over in
-  { state with active_piece; grounded_ticks = 0; phase }
+  { state with active_piece; grounded_ticks = 0; lock_resets = 0; phase }
 
 let lock_piece state =
   let board = Board.place state.board state.active_piece in
