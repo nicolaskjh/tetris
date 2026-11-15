@@ -81,14 +81,14 @@ let move_if_possible state ~columns ~rows =
   | Some moved -> reset_lock_delay_after_player_action state moved
   | None -> state
 
-let try_rotate state ~rotate ~kicks =
-  let rotated_piece = rotate state.active_piece in
-  List.find_map (kicks state.active_piece) ~f:(fun (kick : Piece.kick) ->
+let try_rotate state direction =
+  let rotated_piece = Piece.rotate state.active_piece direction in
+  List.find_map (Piece.kicks state.active_piece direction) ~f:(fun (kick : Piece.kick) ->
     let active_piece = Piece.move rotated_piece ~columns:kick.columns ~rows:kick.rows in
     if Board.can_place state.board active_piece then Some { state with active_piece } else None)
 
-let rotate_if_possible state ~rotate ~kicks =
-  match try_rotate state ~rotate ~kicks with
+let rotate_if_possible state direction =
+  match try_rotate state direction with
   | Some rotated -> reset_lock_delay_after_player_action state rotated
   | None -> state
 
@@ -164,9 +164,8 @@ let apply_action state action =
       (match action with
        | Move_left -> move_if_possible state ~columns:(-1) ~rows:0
        | Move_right -> move_if_possible state ~columns:1 ~rows:0
-       | Rotate_clockwise -> rotate_if_possible state ~rotate:Piece.rotate_clockwise ~kicks:Piece.clockwise_kicks
-       | Rotate_counterclockwise ->
-           rotate_if_possible state ~rotate:Piece.rotate_counterclockwise ~kicks:Piece.counterclockwise_kicks
+       | Rotate_clockwise -> rotate_if_possible state Piece.Clockwise
+       | Rotate_counterclockwise -> rotate_if_possible state Piece.Counterclockwise
        | Soft_drop -> move_if_possible state ~columns:0 ~rows:1
        | Tick -> move_down_or_lock state
        | Hold -> hold_piece state

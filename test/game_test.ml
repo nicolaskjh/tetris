@@ -224,7 +224,7 @@ let test_scoring_for_line_clears () =
     in
     let active_piece =
       Tetris.Piece.spawn Tetris.Types.I
-      |> Tetris.Piece.rotate_clockwise
+      |> fun piece -> Tetris.Piece.rotate piece Tetris.Piece.Clockwise
       |> Tetris.Piece.move ~columns:4 ~rows:19
     in
     let game = { game with board; active_piece } in

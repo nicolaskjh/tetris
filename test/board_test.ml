@@ -9,7 +9,7 @@ let test_empty_board_accepts_spawn_piece () =
 
 let test_hidden_rows_accept_a_rotated_spawn_piece () =
   let board = Tetris.Board.empty () in
-  let piece = Tetris.Piece.spawn Tetris.Types.I |> Tetris.Piece.rotate_clockwise in
+  let piece = Tetris.Piece.rotate (Tetris.Piece.spawn Tetris.Types.I) Tetris.Piece.Clockwise in
   assert (Tetris.Board.can_place board piece)
 
 let test_with_filled_cells_creates_a_fixture_board () =
