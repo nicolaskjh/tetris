@@ -8,6 +8,11 @@ let test_piece_cannot_move_past_left_wall () =
   in
   assert (after_moves.active_piece.origin.column = 0)
 
+let test_tick_moves_the_active_piece_down () =
+  let game = Tetris.Game.create ~first_piece:Tetris.Types.O () in
+  let after_tick = Tetris.Game.apply_action game Tetris.Types.Tick in
+  assert (after_tick.active_piece.origin.row = game.active_piece.origin.row + 1)
+
 let test_hard_drop_locks_and_spawns_next_piece () =
   let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
   let game = Tetris.Game.apply_action game Tetris.Types.Hard_drop in
@@ -16,4 +21,5 @@ let test_hard_drop_locks_and_spawns_next_piece () =
 
 let () =
   test_piece_cannot_move_past_left_wall ();
+  test_tick_moves_the_active_piece_down ();
   test_hard_drop_locks_and_spawns_next_piece ()
