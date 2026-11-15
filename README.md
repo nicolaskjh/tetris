@@ -21,13 +21,14 @@ The game runs in an alternate terminal screen. Press Esc to leave it.
 | Up / `W` | Rotate clockwise |
 | Down / `S` | Soft drop |
 | Space | Hard drop |
+| `C` | Hold / swap piece |
 | Esc | Quit |
 
 ## Current mechanics
 
 - 10×20 visible playfield with a spawn buffer
 - Seven-bag, seeded piece randomizer
-- Collision detection, hard and soft drop, lock delay, line clears, and scoring
+- Collision detection, hold, hard and soft drop, lock delay, line clears, and scoring
 
 ## Test and build
 

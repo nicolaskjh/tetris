@@ -10,9 +10,16 @@ let test_render_shows_the_active_piece_and_sidebar () =
   assert (String.is_prefix output ~prefix:"\n");
   assert (String.is_substring output ~substring:"██████");
   assert (String.is_substring output ~substring:"░░░░");
+  assert (String.is_substring output ~substring:"HOLD (C)");
   assert (String.is_substring output ~substring:"Score: 0");
   assert (String.is_substring output ~substring:"Lines: 0");
   assert (String.is_substring output ~substring:"░░░░")
+
+let test_render_shows_the_held_piece_in_its_slot () =
+  let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
+  let game = Tetris.Game.apply_action game Tetris.Types.Hold in
+  let output = Tetris.Renderer.render game in
+  assert (String.is_substring output ~substring:"████    ")
 
 let test_render_shows_game_over_banner_only_when_needed () =
   let game = Tetris.Game.create () in
@@ -30,5 +37,6 @@ let test_render_overlays_the_active_piece_on_the_fixed_board () =
 let () =
   test_next_piece_uses_its_tetromino_shape ();
   test_render_shows_the_active_piece_and_sidebar ();
+  test_render_shows_the_held_piece_in_its_slot ();
   test_render_shows_game_over_banner_only_when_needed ();
   test_render_overlays_the_active_piece_on_the_fixed_board ()

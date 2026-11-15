@@ -10,6 +10,7 @@ let command_of_char = function
   | 'w' -> Some (Game_action Rotate_clockwise)
   | 's' -> Some (Game_action Soft_drop)
   | ' ' -> Some (Game_action Hard_drop)
+  | 'c' -> Some (Game_action Hold)
   | _ -> None
 
 let command_of_arrow = function

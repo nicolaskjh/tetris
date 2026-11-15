@@ -31,6 +31,29 @@ let test_hard_drop_locks_and_spawns_next_piece () =
   assert (match game.active_piece.kind with Tetris.Types.I -> true | _ -> false);
   assert (not (Tetris.Board.is_empty game.board { Tetris.Types.column = 4; row = 19 }))
 
+let test_hold_stores_the_active_piece_and_spawns_the_preview () =
+  let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
+  let game = Tetris.Game.apply_action game Tetris.Types.Hold in
+  assert (match game.held_piece with Some O -> true | _ -> false);
+  assert (match game.active_piece.kind with I -> true | _ -> false);
+  assert (not game.can_hold)
+
+let test_hold_can_only_be_used_once_before_locking () =
+  let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
+  let game = Tetris.Game.apply_action game Tetris.Types.Hold in
+  let game = Tetris.Game.apply_action game Tetris.Types.Hold in
+  assert (match game.held_piece with Some O -> true | _ -> false);
+  assert (match game.active_piece.kind with I -> true | _ -> false)
+
+let test_locking_reenables_hold_and_a_second_hold_swaps_pieces () =
+  let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
+  let game = Tetris.Game.apply_action game Tetris.Types.Hold in
+  let game = Tetris.Game.apply_action game Tetris.Types.Hard_drop in
+  assert game.can_hold;
+  let game = Tetris.Game.apply_action game Tetris.Types.Hold in
+  assert (match game.active_piece.kind with O -> true | _ -> false);
+  assert (not game.can_hold)
+
 let test_blocked_spawn_ends_the_game () =
   let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.T () in
   let board = Tetris.Board.place game.board (Tetris.Piece.spawn Tetris.Types.T) in
@@ -113,6 +136,9 @@ let () =
   test_piece_cannot_move_past_left_wall ();
   test_tick_moves_the_active_piece_down ();
   test_hard_drop_locks_and_spawns_next_piece ();
+  test_hold_stores_the_active_piece_and_spawns_the_preview ();
+  test_hold_can_only_be_used_once_before_locking ();
+  test_locking_reenables_hold_and_a_second_hold_swaps_pieces ();
   test_blocked_spawn_ends_the_game ();
   test_preview_advances_after_a_piece_locks ();
   test_tick_starts_lock_delay_at_the_floor ();

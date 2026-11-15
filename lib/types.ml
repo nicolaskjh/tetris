@@ -34,4 +34,5 @@ type action =
   | Rotate_clockwise
   | Soft_drop
   | Hard_drop
+  | Hold
   | Tick

@@ -62,9 +62,21 @@ let render_next_piece kind =
          if List.exists offsets ~f:(fun offset -> offset.column = column && offset.row = row) then filled_cell
          else empty_cell)))
 
+let empty_piece_preview = List.init 2 ~f:(fun _ -> String.make (4 * cell_width) ' ')
+
+let render_held_piece = function
+  | None -> empty_piece_preview
+  | Some kind -> render_next_piece kind
+
 let sidebar_lines (game : Game.t) =
   let next_piece = render_next_piece game.next_piece in
-  [ List.nth_exn next_piece 0
+  let held_piece = render_held_piece game.held_piece in
+  [ "HOLD (C)"
+  ; List.nth_exn held_piece 0
+  ; List.nth_exn held_piece 1
+  ]
+  @ [ ""
+  ; List.nth_exn next_piece 0
   ; List.nth_exn next_piece 1
   ; ""
   ; "Score: " ^ Int.to_string game.score
