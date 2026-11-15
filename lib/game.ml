@@ -2,12 +2,13 @@ open Base
 open Types
 
 type lock_delay =
-  { elapsed_ticks : int
+  { elapsed_seconds : float
   ; reset_count : int
   }
 
 type t =
   { board : Board.t
+  ; rules : Rules.t
   ; active_piece : Piece.t
   ; held_piece : piece_kind option
   ; can_hold : bool
@@ -19,17 +20,16 @@ type t =
   ; phase : phase
   }
 
-let lock_delay_ticks = 2
-let max_lock_resets = 15
-let fresh_lock_delay = { elapsed_ticks = 0; reset_count = 0 }
+let fresh_lock_delay = { elapsed_seconds = 0.0; reset_count = 0 }
 
-let create ?(seed = 1) ?first_piece ?next_piece () =
+let create ?(rules = Rules.default) ?(seed = 1) ?first_piece ?next_piece () =
   let randomizer = Randomizer.create ~seed in
   let generated_first_piece, randomizer = Randomizer.next randomizer in
   let generated_next_piece, randomizer = Randomizer.next randomizer in
   let first_piece = Option.value first_piece ~default:generated_first_piece in
   let next_piece = Option.value next_piece ~default:generated_next_piece in
   { board = Board.empty ()
+  ; rules
   ; active_piece = Piece.spawn first_piece
   ; held_piece = None
   ; can_hold = true
@@ -45,18 +45,20 @@ let try_move state ~columns ~rows =
   let active_piece = Piece.move state.active_piece ~columns ~rows in
   if Board.can_place state.board active_piece then Some { state with active_piece } else None
 
-let reset_lock_timer lock_delay = { lock_delay with elapsed_ticks = 0 }
+let gravity_interval_seconds state = state.rules.gravity_interval_seconds
+
+let reset_lock_timer lock_delay = { lock_delay with elapsed_seconds = 0.0 }
 
 let is_grounded state =
   let below = Piece.move state.active_piece ~columns:0 ~rows:1 in
   not (Board.can_place state.board below)
 
 let reset_lock_delay_after_player_action state moved =
-  if is_grounded state && state.lock_delay.reset_count < max_lock_resets
+  if is_grounded state && state.lock_delay.reset_count < state.rules.max_lock_resets
   then
     { moved with
       lock_delay =
-        { elapsed_ticks = 0
+        { elapsed_seconds = 0.0
         ; reset_count = state.lock_delay.reset_count + 1
         }
     }
@@ -134,9 +136,13 @@ let move_down_or_lock state =
   | Some moved -> { moved with lock_delay = reset_lock_timer moved.lock_delay }
   | None ->
       let lock_delay =
-        { state.lock_delay with elapsed_ticks = state.lock_delay.elapsed_ticks + 1 }
+        { state.lock_delay with
+          elapsed_seconds = state.lock_delay.elapsed_seconds +. state.rules.gravity_interval_seconds
+        }
       in
-      if lock_delay.elapsed_ticks >= lock_delay_ticks then lock_piece state else { state with lock_delay }
+      if Float.(lock_delay.elapsed_seconds >= state.rules.lock_delay_seconds)
+      then lock_piece state
+      else { state with lock_delay }
 
 let apply_action state action =
   match state.phase with

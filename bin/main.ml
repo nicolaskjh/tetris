@@ -1,14 +1,13 @@
 open Core
 open Async
 
-let tick_interval = Time_float.Span.of_sec 0.5
-
 let apply_action game action =
   game := Tetris.Game.apply_action !game action;
   Terminal.redraw !game
 
 let rec tick_loop game =
-  Deferred.bind (Clock.after tick_interval) ~f:(fun () ->
+  let interval = Time_float.Span.of_sec (Tetris.Game.gravity_interval_seconds !game) in
+  Deferred.bind (Clock.after interval) ~f:(fun () ->
     apply_action game Tetris.Types.Tick;
     tick_loop game)
 
