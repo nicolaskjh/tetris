@@ -57,27 +57,30 @@ let start_input terminal =
 
 let read_character terminal = Pipe.read terminal.input
 
-let read_arrow_input terminal =
+let rec decode_character terminal state character =
+  match Tetris.Input_decoder.consume state character with
+  | Tetris.Input_decoder.Command command -> Deferred.return (Command command)
+  | Tetris.Input_decoder.Ignored -> Deferred.return Ignored
+  | Tetris.Input_decoder.Awaiting_input Tetris.Input_decoder.Escape -> read_escape_input terminal
+  | Tetris.Input_decoder.Awaiting_input state -> read_sequence_character terminal state
+
+and read_escape_input terminal =
   Deferred.bind
     (Clock.with_timeout escape_timeout (read_character terminal))
     ~f:(function
-      | `Timeout -> Deferred.return (Command Quit)
+      | `Timeout ->
+          (match Tetris.Input_decoder.timeout Tetris.Input_decoder.Escape with
+           | Tetris.Input_decoder.Command command -> Deferred.return (Command command)
+           | Tetris.Input_decoder.Ignored | Tetris.Input_decoder.Awaiting_input _ -> assert false)
       | `Result `Eof -> Deferred.return End_of_input
-      | `Result (`Ok '[') ->
-          Deferred.map (read_character terminal) ~f:(function
-            | `Eof -> End_of_input
-            | `Ok arrow ->
-                (match Tetris.Controls.command_of_arrow arrow with
-                 | Some command -> Command command
-                 | None -> Ignored))
-      | `Result (`Ok _) -> Deferred.return Ignored)
+      | `Result (`Ok character) -> decode_character terminal Tetris.Input_decoder.Escape character)
+
+and read_sequence_character terminal state =
+  Deferred.bind (read_character terminal) ~f:(function
+    | `Eof -> Deferred.return End_of_input
+    | `Ok character -> decode_character terminal state character)
 
 let read_input terminal =
   Deferred.bind (read_character terminal) ~f:(function
     | `Eof -> Deferred.return End_of_input
-    | `Ok '\027' -> read_arrow_input terminal
-    | `Ok character ->
-        Deferred.return
-          (match Tetris.Controls.command_of_char character with
-           | Some command -> Command command
-           | None -> Ignored))
+    | `Ok character -> decode_character terminal Tetris.Input_decoder.Initial character)
