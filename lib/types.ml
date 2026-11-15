@@ -9,6 +9,17 @@ type piece_kind =
   | S
   | Z
 
+let equal_piece_kind left right =
+  match left, right with
+  | I, I
+  | O, O
+  | T, T
+  | J, J
+  | L, L
+  | S, S
+  | Z, Z -> true
+  | _ -> false
+
 type cell =
   | Empty
   | Filled

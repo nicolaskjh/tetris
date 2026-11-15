@@ -1,17 +1,6 @@
 open Base
 open Tetris.Types
 
-let same_piece left right =
-  match left, right with
-  | I, I
-  | O, O
-  | T, T
-  | J, J
-  | L, L
-  | S, S
-  | Z, Z -> true
-  | _ -> false
-
 let test_piece_cannot_move_past_left_wall () =
   let game = Tetris.Game.create ~first_piece:Tetris.Types.O () in
   let after_moves =
@@ -41,7 +30,7 @@ let test_preview_queue_advances_when_a_piece_locks () =
   let expected_next_piece = List.nth_exn game.next_pieces 1 in
   let game = Tetris.Game.apply_action game Hard_drop in
   assert (List.length game.next_pieces = Tetris.Game.preview_queue_length);
-  assert (same_piece (List.hd_exn game.next_pieces) expected_next_piece)
+  assert (equal_piece_kind (List.hd_exn game.next_pieces) expected_next_piece)
 
 let test_hold_stores_the_active_piece_and_spawns_the_preview () =
   let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
@@ -81,7 +70,7 @@ let test_preview_advances_after_a_piece_locks () =
   let expected_preview, _ = Tetris.Randomizer.next randomizer in
   let game = Tetris.Game.create ~seed ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
   let game = Tetris.Game.apply_action game Tetris.Types.Hard_drop in
-  assert (same_piece (List.hd_exn game.next_pieces) expected_preview)
+  assert (equal_piece_kind (List.hd_exn game.next_pieces) expected_preview)
 
 let game_with_piece_at_the_floor () =
   let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
