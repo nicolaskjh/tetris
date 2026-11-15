@@ -18,19 +18,19 @@ let rec ghost_piece (game : Game.t) piece =
   let below = Piece.move piece ~columns:0 ~rows:1 in
   if Board.can_place game.board below then ghost_piece game below else piece
 
-let rendered_cell_at (game : Game.t) coordinate =
+let rendered_cell_at (game : Game.t) ~landing_piece coordinate =
   if is_piece_square game.active_piece coordinate then filled_cell
-  else if is_piece_square (ghost_piece game game.active_piece) coordinate then ghost_cell
+  else if is_piece_square landing_piece coordinate then ghost_cell
   else
     match Board.cell game.board coordinate with
     | Empty -> empty_cell
     | Filled -> filled_cell
 
-let render_row (game : Game.t) row =
+let render_row (game : Game.t) ~landing_piece row =
   let contents =
     String.concat ~sep:""
       (List.init Board.width ~f:(fun column ->
-         rendered_cell_at game { column; row }))
+         rendered_cell_at game ~landing_piece { column; row }))
   in
   if row < 0 then " " ^ contents ^ " " else "|" ^ contents ^ "|"
 
@@ -81,8 +81,9 @@ let combine_lines board_lines sidebar_lines =
   List.map2_exn board_lines sidebar_lines ~f:(fun board sidebar -> board ^ "  " ^ sidebar ^ "\n")
 
 let render (game : Game.t) =
+  let landing_piece = ghost_piece game game.active_piece in
   let board_lines =
-    List.map (List.range Board.first_row (Board.last_row + 1)) ~f:(render_row game)
+    List.map (List.range Board.first_row (Board.last_row + 1)) ~f:(render_row game ~landing_piece)
     @ [ border ]
   in
   "\n" ^ String.concat ~sep:"" (combine_lines board_lines (sidebar_lines game))

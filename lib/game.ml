@@ -28,7 +28,10 @@ let create ?(seed = 1) ?first_piece ?next_piece () =
 
 let try_move state ~columns ~rows =
   let active_piece = Piece.move state.active_piece ~columns ~rows in
-  if Board.can_place state.board active_piece then { state with active_piece } else state
+  if Board.can_place state.board active_piece then Some { state with active_piece } else None
+
+let move_if_possible state ~columns ~rows =
+  Option.value (try_move state ~columns ~rows) ~default:state
 
 let try_rotate state =
   let active_piece = Piece.rotate_clockwise state.active_piece in
@@ -57,21 +60,23 @@ let lock_piece state =
   }
 
 let move_down_or_lock state =
-  let moved = try_move state ~columns:0 ~rows:1 in
-  if phys_equal moved state then lock_piece state else moved
+  match try_move state ~columns:0 ~rows:1 with
+  | Some moved -> moved
+  | None -> lock_piece state
 
 let apply_action state action =
   match state.phase with
   | Game_over -> state
   | Playing ->
       (match action with
-       | Move_left -> try_move state ~columns:(-1) ~rows:0
-       | Move_right -> try_move state ~columns:1 ~rows:0
+       | Move_left -> move_if_possible state ~columns:(-1) ~rows:0
+       | Move_right -> move_if_possible state ~columns:1 ~rows:0
        | Rotate_clockwise -> try_rotate state
        | Soft_drop | Tick -> move_down_or_lock state
        | Hard_drop ->
       let rec fall state =
-        let next = try_move state ~columns:0 ~rows:1 in
-        if phys_equal next state then state else fall next
+        match try_move state ~columns:0 ~rows:1 with
+        | Some moved -> fall moved
+        | None -> state
       in
       lock_piece (fall state))
