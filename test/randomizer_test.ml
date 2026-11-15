@@ -31,6 +31,12 @@ let test_seeded_randomizers_are_repeatable () =
   let second, _ = take (Tetris.Randomizer.create ~seed:73) 21 in
   assert (List.equal same_piece first second)
 
+let test_negative_seeds_are_normalized () =
+  let negative_seed, _ = take (Tetris.Randomizer.create ~seed:(-1)) 21 in
+  let normalized_seed, _ = take (Tetris.Randomizer.create ~seed:(Tetris.Randomizer.modulus - 1)) 21 in
+  assert (List.equal same_piece negative_seed normalized_seed)
+
 let () =
   test_every_bag_contains_each_piece_once ();
-  test_seeded_randomizers_are_repeatable ()
+  test_seeded_randomizers_are_repeatable ();
+  test_negative_seeds_are_normalized ()

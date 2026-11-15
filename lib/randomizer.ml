@@ -9,7 +9,11 @@ type t =
 let all_piece_kinds = [ I; O; T; J; L; S; Z ]
 let modulus = 2_147_483_647
 
-let create ~seed = { seed = Int.rem seed modulus; bag = [] }
+let normalize_seed seed =
+  let seed = Int.rem seed modulus in
+  if seed < 0 then seed + modulus else seed
+
+let create ~seed = { seed = normalize_seed seed; bag = [] }
 
 let next_seed seed = Int.rem ((seed * 1_103_515_245) + 12_345) modulus
 
