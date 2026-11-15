@@ -176,8 +176,7 @@ let test_rotation_fails_when_every_kick_is_blocked () =
     ; origin = { column = 4; row = 19 }
     }
   in
-  let board = game.board in
-  board.(Tetris.Board.storage_row 18).(6) <- Filled;
+  let board = Tetris.Board.with_filled_cells [ { column = 6; row = 18 } ] in
   let game = { game with board; active_piece } in
   let game = Tetris.Game.apply_action game Rotate_clockwise in
   assert (match game.active_piece.rotation with Reverse -> true | _ -> false);
@@ -194,12 +193,11 @@ let points_for_lines = function
 let test_scoring_for_line_clears () =
   List.iter [ 1; 2; 3; 4 ] ~f:(fun line_count ->
     let game = Tetris.Game.create ~first_piece:Tetris.Types.I ~next_piece:Tetris.Types.O () in
-    let board = Tetris.Board.empty () in
-    for row = 20 - line_count to 19 do
-      for column = 0 to 8 do
-        board.(Tetris.Board.storage_row row).(column) <- Tetris.Types.Filled
-      done
-    done;
+    let board =
+      List.concat_map (List.range (20 - line_count) 20) ~f:(fun row ->
+        List.map (List.range 0 9) ~f:(fun column -> { Tetris.Types.column; row }))
+      |> Tetris.Board.with_filled_cells
+    in
     let active_piece =
       Tetris.Piece.spawn Tetris.Types.I
       |> Tetris.Piece.rotate_clockwise

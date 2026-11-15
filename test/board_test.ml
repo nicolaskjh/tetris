@@ -12,6 +12,14 @@ let test_hidden_rows_accept_a_rotated_spawn_piece () =
   let piece = Tetris.Piece.spawn Tetris.Types.I |> Tetris.Piece.rotate_clockwise in
   assert (Tetris.Board.can_place board piece)
 
+let test_with_filled_cells_creates_a_fixture_board () =
+  let board =
+    Tetris.Board.with_filled_cells
+      [ { Tetris.Types.column = 0; row = 0 }; { column = 9; row = 19 } ]
+  in
+  assert (not (Tetris.Board.is_empty board { Tetris.Types.column = 0; row = 0 }));
+  assert (not (Tetris.Board.is_empty board { Tetris.Types.column = 9; row = 19 }))
+
 let test_clear_two_completed_lines () =
   let board = Tetris.Board.empty () in
   let board =
@@ -49,6 +57,7 @@ let test_clear_four_completed_lines () =
 let () =
   test_empty_board_accepts_spawn_piece ();
   test_hidden_rows_accept_a_rotated_spawn_piece ();
+  test_with_filled_cells_creates_a_fixture_board ();
   test_clear_two_completed_lines ();
   test_rows_above_a_clear_fall_down ();
   test_clear_four_completed_lines ()

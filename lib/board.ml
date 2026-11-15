@@ -28,6 +28,14 @@ let can_place board piece =
 
 let copy board = Array.init storage_height ~f:(fun row -> Array.copy board.(row))
 
+let with_filled_cells coordinates =
+  let board = empty () in
+  List.iter coordinates ~f:(fun ({ column; row } : coordinate) ->
+    if not (is_inside { column; row })
+    then invalid_arg "Board.with_filled_cells: coordinate is outside the board";
+    board.(storage_row row).(column) <- Filled);
+  board
+
 let place board piece =
   let board = copy board in
   List.iter (Piece.squares piece) ~f:(fun ({ column; row } : coordinate) ->
