@@ -64,17 +64,21 @@ let render_piece_preview = function
   | None -> empty_piece_preview
   | Some kind -> render_next_piece kind
 
+let rec render_piece_queue = function
+  | [] -> []
+  | [ kind ] -> render_next_piece kind
+  | kind :: remaining -> render_next_piece kind @ [ "" ] @ render_piece_queue remaining
+
 let sidebar_lines (game : Game.t) =
-  let next_piece = render_piece_preview (Some game.next_piece) in
+  let next_pieces = render_piece_queue game.next_pieces in
   let held_piece = render_piece_preview game.held_piece in
   [ "HOLD (C)"
   ; List.nth_exn held_piece 0
   ; List.nth_exn held_piece 1
   ]
+  @ [ ""; "NEXT" ]
+  @ next_pieces
   @ [ ""
-  ; List.nth_exn next_piece 0
-  ; List.nth_exn next_piece 1
-  ; ""
   ; "Score: " ^ Int.to_string game.score
   ; "Lines: " ^ Int.to_string game.lines_cleared
   ]
@@ -84,14 +88,21 @@ let sidebar_lines (game : Game.t) =
   | Game_over -> [ ""; "+-----------+"; "| GAME OVER |"; "+-----------+" ]
 
 let combine_lines board_lines sidebar_lines =
-  let padding = Int.max 0 (List.length board_lines - List.length sidebar_lines) in
-  let sidebar_lines = sidebar_lines @ List.init padding ~f:(fun _ -> "") in
+  let line_count = Int.max (List.length board_lines) (List.length sidebar_lines) in
+  let board_padding = String.make (String.length border) ' ' in
+  let board_lines =
+    board_lines @ List.init (line_count - List.length board_lines) ~f:(fun _ -> board_padding)
+  in
+  let sidebar_lines =
+    sidebar_lines @ List.init (line_count - List.length sidebar_lines) ~f:(fun _ -> "")
+  in
   List.map2_exn board_lines sidebar_lines ~f:(fun board sidebar -> board ^ "  " ^ sidebar ^ "\n")
 
 let render (game : Game.t) =
   let landing_piece = ghost_piece game game.active_piece in
   let board_lines =
-    List.map (List.range Board.first_row (Board.last_row + 1)) ~f:(render_row game ~landing_piece)
-    @ [ border ]
+    String.make (String.length border) ' '
+    :: (List.map (List.range Board.first_row (Board.last_row + 1)) ~f:(render_row game ~landing_piece)
+        @ [ border ])
   in
   "\n" ^ String.concat ~sep:"" (combine_lines board_lines (sidebar_lines game))

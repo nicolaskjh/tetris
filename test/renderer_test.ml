@@ -11,6 +11,7 @@ let test_render_shows_the_active_piece_and_sidebar () =
   assert (String.is_substring output ~substring:"██████");
   assert (String.is_substring output ~substring:"░░░░");
   assert (String.is_substring output ~substring:"HOLD (C)");
+  assert (String.is_substring output ~substring:"NEXT");
   assert (String.is_substring output ~substring:"Score: 0");
   assert (String.is_substring output ~substring:"Lines: 0");
   assert (String.is_substring output ~substring:"░░░░")

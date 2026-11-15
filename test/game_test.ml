@@ -31,6 +31,18 @@ let test_hard_drop_locks_and_spawns_next_piece () =
   assert (match game.active_piece.kind with Tetris.Types.I -> true | _ -> false);
   assert (not (Tetris.Board.is_empty game.board { Tetris.Types.column = 4; row = 19 }))
 
+let test_preview_queue_has_five_pieces () =
+  let game = Tetris.Game.create ~next_piece:I () in
+  assert (List.length game.next_pieces = Tetris.Game.preview_queue_length);
+  assert (match List.hd_exn game.next_pieces with I -> true | _ -> false)
+
+let test_preview_queue_advances_when_a_piece_locks () =
+  let game = Tetris.Game.create ~first_piece:O ~next_piece:I () in
+  let expected_next_piece = List.nth_exn game.next_pieces 1 in
+  let game = Tetris.Game.apply_action game Hard_drop in
+  assert (List.length game.next_pieces = Tetris.Game.preview_queue_length);
+  assert (same_piece (List.hd_exn game.next_pieces) expected_next_piece)
+
 let test_hold_stores_the_active_piece_and_spawns_the_preview () =
   let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
   let game = Tetris.Game.apply_action game Tetris.Types.Hold in
@@ -69,7 +81,7 @@ let test_preview_advances_after_a_piece_locks () =
   let expected_preview, _ = Tetris.Randomizer.next randomizer in
   let game = Tetris.Game.create ~seed ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
   let game = Tetris.Game.apply_action game Tetris.Types.Hard_drop in
-  assert (same_piece game.next_piece expected_preview)
+  assert (same_piece (List.hd_exn game.next_pieces) expected_preview)
 
 let game_with_piece_at_the_floor () =
   let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
@@ -213,6 +225,8 @@ let () =
   test_piece_cannot_move_past_left_wall ();
   test_tick_moves_the_active_piece_down ();
   test_hard_drop_locks_and_spawns_next_piece ();
+  test_preview_queue_has_five_pieces ();
+  test_preview_queue_advances_when_a_piece_locks ();
   test_hold_stores_the_active_piece_and_spawns_the_preview ();
   test_hold_can_only_be_used_once_before_locking ();
   test_locking_reenables_hold_and_a_second_hold_swaps_pieces ();

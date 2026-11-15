@@ -12,7 +12,7 @@ type t =
   ; active_piece : Piece.t
   ; held_piece : piece_kind option
   ; can_hold : bool
-  ; next_piece : piece_kind
+  ; next_pieces : piece_kind list
   ; randomizer : Randomizer.t
   ; score : int
   ; lines_cleared : int
@@ -21,19 +21,31 @@ type t =
   }
 
 let fresh_lock_delay = { elapsed_seconds = 0.0; reset_count = 0 }
+let preview_queue_length = 5
+
+let rec generate_next_pieces randomizer count =
+  if count = 0 then [], randomizer
+  else
+    let piece, randomizer = Randomizer.next randomizer in
+    let pieces, randomizer = generate_next_pieces randomizer (count - 1) in
+    piece :: pieces, randomizer
 
 let create ?(rules = Rules.default) ?(seed = 1) ?first_piece ?next_piece () =
   let randomizer = Randomizer.create ~seed in
   let generated_first_piece, randomizer = Randomizer.next randomizer in
-  let generated_next_piece, randomizer = Randomizer.next randomizer in
+  let generated_next_pieces, randomizer = generate_next_pieces randomizer preview_queue_length in
   let first_piece = Option.value first_piece ~default:generated_first_piece in
-  let next_piece = Option.value next_piece ~default:generated_next_piece in
+  let next_pieces =
+    match next_piece with
+    | None -> generated_next_pieces
+    | Some next_piece -> next_piece :: List.tl_exn generated_next_pieces
+  in
   { board = Board.empty ()
   ; rules
   ; active_piece = Piece.spawn first_piece
   ; held_piece = None
   ; can_hold = true
-  ; next_piece
+  ; next_pieces
   ; randomizer
   ; score = 0
   ; lines_cleared = 0
@@ -92,16 +104,20 @@ let spawn_piece state kind =
   let phase = if Board.can_place state.board active_piece then Playing else Game_over in
   { state with active_piece; lock_delay = fresh_lock_delay; phase }
 
+let take_next_piece state =
+  match state.next_pieces with
+  | next_piece :: remaining_pieces ->
+      let generated_piece, randomizer = Randomizer.next state.randomizer in
+      next_piece, { state with next_pieces = remaining_pieces @ [ generated_piece ]; randomizer }
+  | [] -> assert false
+
 let lock_piece state =
   let board = Board.place state.board state.active_piece in
   let board, cleared_lines = Board.clear_complete_lines board in
-  let active_kind = state.next_piece in
-  let next_piece, randomizer = Randomizer.next state.randomizer in
+  let active_kind, state = take_next_piece state in
   let state =
     { state with
       board
-    ; next_piece
-    ; randomizer
     ; score = state.score + points_for_lines cleared_lines
     ; lines_cleared = state.lines_cleared + cleared_lines
     ; can_hold = true
@@ -114,14 +130,11 @@ let hold_piece state =
   else
     match state.held_piece with
     | None ->
-        let active_kind = state.next_piece in
-        let next_piece, randomizer = Randomizer.next state.randomizer in
+        let active_kind, state = take_next_piece state in
         let state =
           { state with
             held_piece = Some state.active_piece.kind
           ; can_hold = false
-          ; next_piece
-          ; randomizer
           }
         in
         spawn_piece state active_kind
