@@ -13,12 +13,18 @@ let test_i_piece_uses_its_own_rotation_offsets () =
   assert
     (List.equal coordinate_equal
        (Tetris.Piece.squares piece)
-       [ { Tetris.Types.column = 5; row = -1 }
+       [ { Tetris.Types.column = 5; row = -3 }
+       ; { column = 5; row = -2 }
+       ; { column = 5; row = -1 }
        ; { column = 5; row = 0 }
-       ; { column = 5; row = 1 }
-       ; { column = 5; row = 2 }
        ])
+
+let test_every_piece_spawns_above_the_visible_board () =
+  List.iter [ Tetris.Types.I; O; T; J; L; S; Z ] ~f:(fun kind ->
+    let piece = Tetris.Piece.spawn kind in
+    List.iter (Tetris.Piece.squares piece) ~f:(fun square -> assert (square.row < 0)))
 
 let () =
   test_o_piece_does_not_shift_when_rotated ();
-  test_i_piece_uses_its_own_rotation_offsets ()
+  test_i_piece_uses_its_own_rotation_offsets ();
+  test_every_piece_spawns_above_the_visible_board ()

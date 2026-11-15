@@ -7,7 +7,7 @@ type t =
   ; origin : coordinate
   }
 
-let spawn kind = { kind; rotation = Spawn; origin = { column = 4; row = 0 } }
+let spawn kind = { kind; rotation = Spawn; origin = { column = 4; row = -2 } }
 
 let offsets kind rotation =
   match kind, rotation with

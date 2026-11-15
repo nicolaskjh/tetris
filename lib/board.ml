@@ -4,7 +4,7 @@ open Types
 type t = cell array array
 
 let width = 10
-let hidden_rows = 2
+let hidden_rows = 4
 let visible_height = 20
 let first_row = -hidden_rows
 let last_row = visible_height - 1

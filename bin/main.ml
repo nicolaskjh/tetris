@@ -3,4 +3,4 @@ open Stdio
 
 let () =
   let game = Tetris.Game.create () in
-  printf "Tetris scaffold ready: score %d.\n" game.score;
+  printf "%s" (Tetris.Renderer.render game)
