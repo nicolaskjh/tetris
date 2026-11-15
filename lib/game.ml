@@ -1,6 +1,11 @@
 open Base
 open Types
 
+type lock_delay =
+  { elapsed_ticks : int
+  ; reset_count : int
+  }
+
 type t =
   { board : Board.t
   ; active_piece : Piece.t
@@ -10,13 +15,13 @@ type t =
   ; randomizer : Randomizer.t
   ; score : int
   ; lines_cleared : int
-  ; grounded_ticks : int
-  ; lock_resets : int
+  ; lock_delay : lock_delay
   ; phase : phase
   }
 
 let lock_delay_ticks = 2
 let max_lock_resets = 15
+let fresh_lock_delay = { elapsed_ticks = 0; reset_count = 0 }
 
 let create ?(seed = 1) ?first_piece ?next_piece () =
   let randomizer = Randomizer.create ~seed in
@@ -32,8 +37,7 @@ let create ?(seed = 1) ?first_piece ?next_piece () =
   ; randomizer
   ; score = 0
   ; lines_cleared = 0
-  ; grounded_ticks = 0
-  ; lock_resets = 0
+  ; lock_delay = fresh_lock_delay
   ; phase = Playing
   }
 
@@ -41,15 +45,21 @@ let try_move state ~columns ~rows =
   let active_piece = Piece.move state.active_piece ~columns ~rows in
   if Board.can_place state.board active_piece then Some { state with active_piece } else None
 
-let reset_lock_delay state = { state with grounded_ticks = 0 }
+let reset_lock_timer lock_delay = { lock_delay with elapsed_ticks = 0 }
 
 let is_grounded state =
   let below = Piece.move state.active_piece ~columns:0 ~rows:1 in
   not (Board.can_place state.board below)
 
 let reset_lock_delay_after_player_action state moved =
-  if is_grounded state && state.lock_resets < max_lock_resets
-  then { moved with grounded_ticks = 0; lock_resets = state.lock_resets + 1 }
+  if is_grounded state && state.lock_delay.reset_count < max_lock_resets
+  then
+    { moved with
+      lock_delay =
+        { elapsed_ticks = 0
+        ; reset_count = state.lock_delay.reset_count + 1
+        }
+    }
   else moved
 
 let move_if_possible state ~columns ~rows =
@@ -60,7 +70,7 @@ let move_if_possible state ~columns ~rows =
 let try_rotate state =
   let rotated_piece = Piece.rotate_clockwise state.active_piece in
   List.find_map (Piece.clockwise_kicks state.active_piece) ~f:(fun kick ->
-    let active_piece = Piece.move rotated_piece ~columns:kick.column ~rows:kick.row in
+    let active_piece = Piece.move rotated_piece ~columns:kick.columns ~rows:kick.rows in
     if Board.can_place state.board active_piece then Some { state with active_piece } else None)
 
 let rotate_if_possible state =
@@ -78,7 +88,7 @@ let points_for_lines = function
 let spawn_piece state kind =
   let active_piece = Piece.spawn kind in
   let phase = if Board.can_place state.board active_piece then Playing else Game_over in
-  { state with active_piece; grounded_ticks = 0; lock_resets = 0; phase }
+  { state with active_piece; lock_delay = fresh_lock_delay; phase }
 
 let lock_piece state =
   let board = Board.place state.board state.active_piece in
@@ -121,10 +131,12 @@ let hold_piece state =
 
 let move_down_or_lock state =
   match try_move state ~columns:0 ~rows:1 with
-  | Some moved -> reset_lock_delay moved
+  | Some moved -> { moved with lock_delay = reset_lock_timer moved.lock_delay }
   | None ->
-      let grounded_ticks = state.grounded_ticks + 1 in
-      if grounded_ticks >= lock_delay_ticks then lock_piece state else { state with grounded_ticks }
+      let lock_delay =
+        { state.lock_delay with elapsed_ticks = state.lock_delay.elapsed_ticks + 1 }
+      in
+      if lock_delay.elapsed_ticks >= lock_delay_ticks then lock_piece state else { state with lock_delay }
 
 let apply_action state action =
   match state.phase with

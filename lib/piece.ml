@@ -7,6 +7,11 @@ type t =
   ; origin : coordinate
   }
 
+type kick =
+  { columns : int
+  ; rows : int
+  }
+
 let spawn kind = { kind; rotation = Spawn; origin = { column = 4; row = -2 } }
 
 let offsets kind rotation =
@@ -55,61 +60,62 @@ let rotate_clockwise piece =
   { piece with rotation }
 
 let clockwise_kicks piece =
+  let kick columns rows = { columns; rows } in
   match piece.kind, piece.rotation with
-  | O, _ -> [ { column = 0; row = 0 } ]
+  | O, _ -> [ kick 0 0 ]
   | (J | L | S | T | Z), Spawn ->
-      [ { column = 0; row = 0 }
-      ; { column = -1; row = 0 }
-      ; { column = -1; row = -1 }
-      ; { column = 0; row = 2 }
-      ; { column = -1; row = 2 }
+      [ kick 0 0
+      ; kick (-1) 0
+      ; kick (-1) (-1)
+      ; kick 0 2
+      ; kick (-1) 2
       ]
   | (J | L | S | T | Z), Right ->
-      [ { column = 0; row = 0 }
-      ; { column = 1; row = 0 }
-      ; { column = 1; row = 1 }
-      ; { column = 0; row = -2 }
-      ; { column = 1; row = -2 }
+      [ kick 0 0
+      ; kick 1 0
+      ; kick 1 1
+      ; kick 0 (-2)
+      ; kick 1 (-2)
       ]
   | (J | L | S | T | Z), Reverse ->
-      [ { column = 0; row = 0 }
-      ; { column = 1; row = 0 }
-      ; { column = 1; row = -1 }
-      ; { column = 0; row = 2 }
-      ; { column = 1; row = 2 }
+      [ kick 0 0
+      ; kick 1 0
+      ; kick 1 (-1)
+      ; kick 0 2
+      ; kick 1 2
       ]
   | (J | L | S | T | Z), Left ->
-      [ { column = 0; row = 0 }
-      ; { column = -1; row = 0 }
-      ; { column = -1; row = 1 }
-      ; { column = 0; row = -2 }
-      ; { column = -1; row = -2 }
+      [ kick 0 0
+      ; kick (-1) 0
+      ; kick (-1) 1
+      ; kick 0 (-2)
+      ; kick (-1) (-2)
       ]
   | I, Spawn ->
-      [ { column = 0; row = 0 }
-      ; { column = -2; row = 0 }
-      ; { column = 1; row = 0 }
-      ; { column = -2; row = 1 }
-      ; { column = 1; row = -2 }
+      [ kick 0 0
+      ; kick (-2) 0
+      ; kick 1 0
+      ; kick (-2) 1
+      ; kick 1 (-2)
       ]
   | I, Right ->
-      [ { column = 0; row = 0 }
-      ; { column = -1; row = 0 }
-      ; { column = 2; row = 0 }
-      ; { column = -1; row = -2 }
-      ; { column = 2; row = 1 }
+      [ kick 0 0
+      ; kick (-1) 0
+      ; kick 2 0
+      ; kick (-1) (-2)
+      ; kick 2 1
       ]
   | I, Reverse ->
-      [ { column = 0; row = 0 }
-      ; { column = 2; row = 0 }
-      ; { column = -1; row = 0 }
-      ; { column = 2; row = -1 }
-      ; { column = -1; row = 2 }
+      [ kick 0 0
+      ; kick 2 0
+      ; kick (-1) 0
+      ; kick 2 (-1)
+      ; kick (-1) 2
       ]
   | I, Left ->
-      [ { column = 0; row = 0 }
-      ; { column = 1; row = 0 }
-      ; { column = -2; row = 0 }
-      ; { column = 1; row = 2 }
-      ; { column = -2; row = -1 }
+      [ kick 0 0
+      ; kick 1 0
+      ; kick (-2) 0
+      ; kick 1 2
+      ; kick (-2) (-1)
       ]

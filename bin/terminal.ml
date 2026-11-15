@@ -1,7 +1,12 @@
 open Core
 open Async
 
-type t = { mutable saved_settings : Core_unix.Terminal_io.t option }
+type t =
+  { mutable saved_settings : Core_unix.Terminal_io.t option
+  ; input : char Pipe.Reader.t
+  ; input_writer : char Pipe.Writer.t
+  ; mutable input_started : bool
+  }
 
 type input_result =
   | Command of Tetris.Controls.command
@@ -10,7 +15,9 @@ type input_result =
 
 let escape_timeout = Time_float.Span.of_sec 0.05
 
-let create () = { saved_settings = None }
+let create () =
+  let input, input_writer = Pipe.create () in
+  { saved_settings = None; input; input_writer; input_started = false }
 
 let enter_game_screen () = printf "\027[?1049h\027[?25l%!"
 
@@ -33,14 +40,31 @@ let restore terminal =
 
 let redraw game = printf "\027[H\027[J%s%!" (Tetris.Renderer.render game)
 
-let read_arrow_input () =
+let rec copy_input_to_pipe terminal =
+  Deferred.bind (Reader.read_char (Lazy.force Reader.stdin)) ~f:(function
+    | `Eof ->
+        Pipe.close terminal.input_writer;
+        Deferred.unit
+    | `Ok character ->
+        Deferred.bind (Pipe.write terminal.input_writer character) ~f:(fun () ->
+          copy_input_to_pipe terminal))
+
+let start_input terminal =
+  if not terminal.input_started
+  then (
+    terminal.input_started <- true;
+    don't_wait_for (copy_input_to_pipe terminal))
+
+let read_character terminal = Pipe.read terminal.input
+
+let read_arrow_input terminal =
   Deferred.bind
-    (Clock.with_timeout escape_timeout (Reader.read_char (Lazy.force Reader.stdin)))
+    (Clock.with_timeout escape_timeout (read_character terminal))
     ~f:(function
       | `Timeout -> Deferred.return (Command Quit)
       | `Result `Eof -> Deferred.return End_of_input
       | `Result (`Ok '[') ->
-          Deferred.map (Reader.read_char (Lazy.force Reader.stdin)) ~f:(function
+          Deferred.map (read_character terminal) ~f:(function
             | `Eof -> End_of_input
             | `Ok arrow ->
                 (match Tetris.Controls.command_of_arrow arrow with
@@ -48,10 +72,10 @@ let read_arrow_input () =
                  | None -> Ignored))
       | `Result (`Ok _) -> Deferred.return Ignored)
 
-let read_input () =
-  Deferred.bind (Reader.read_char (Lazy.force Reader.stdin)) ~f:(function
+let read_input terminal =
+  Deferred.bind (read_character terminal) ~f:(function
     | `Eof -> Deferred.return End_of_input
-    | `Ok '\027' -> read_arrow_input ()
+    | `Ok '\027' -> read_arrow_input terminal
     | `Ok character ->
         Deferred.return
           (match Tetris.Controls.command_of_char character with

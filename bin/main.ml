@@ -12,13 +12,13 @@ let rec tick_loop game =
     apply_action game Tetris.Types.Tick;
     tick_loop game)
 
-let rec input_loop game =
-  Deferred.bind (Terminal.read_input ()) ~f:(function
+let rec input_loop terminal game =
+  Deferred.bind (Terminal.read_input terminal) ~f:(function
     | Terminal.End_of_input -> Deferred.unit
-    | Terminal.Ignored -> input_loop game
+    | Terminal.Ignored -> input_loop terminal game
     | Terminal.Command (Game_action action) ->
         apply_action game action;
-        input_loop game
+        input_loop terminal game
     | Terminal.Command Quit -> Stdlib.exit 0)
 
 let () =
@@ -32,6 +32,7 @@ let () =
        Terminal.enable_raw_input terminal;
        Terminal.enter_game_screen ();
        Terminal.redraw !game;
+       Terminal.start_input terminal;
        don't_wait_for (tick_loop game);
-       don't_wait_for (input_loop game))
+       don't_wait_for (input_loop terminal game))
        ())

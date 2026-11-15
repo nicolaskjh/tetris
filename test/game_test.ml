@@ -80,7 +80,7 @@ let test_tick_starts_lock_delay_at_the_floor () =
   let game = game_with_piece_at_the_floor () in
   let game = Tetris.Game.apply_action game Tetris.Types.Tick in
   assert (match game.active_piece.kind with Tetris.Types.O -> true | _ -> false);
-  assert (game.grounded_ticks = 1);
+  assert (game.lock_delay.elapsed_ticks = 1);
   assert (Tetris.Board.is_empty game.board { Tetris.Types.column = 4; row = 19 })
 
 let test_second_tick_locks_a_piece_at_the_floor () =
@@ -94,21 +94,21 @@ let test_successful_move_resets_lock_delay () =
   let game = game_with_piece_at_the_floor () in
   let game = Tetris.Game.apply_action game Tetris.Types.Tick in
   let game = Tetris.Game.apply_action game Tetris.Types.Move_left in
-  assert (game.grounded_ticks = 0);
+  assert (game.lock_delay.elapsed_ticks = 0);
   let game = Tetris.Game.apply_action game Tetris.Types.Tick in
   assert (match game.active_piece.kind with Tetris.Types.O -> true | _ -> false);
-  assert (game.grounded_ticks = 1)
+  assert (game.lock_delay.elapsed_ticks = 1)
 
 let test_blocked_soft_drop_does_not_advance_lock_delay () =
   let game = game_with_piece_at_the_floor () in
   let game = Tetris.Game.apply_action game Tetris.Types.Soft_drop in
   assert (match game.active_piece.kind with Tetris.Types.O -> true | _ -> false);
-  assert (game.grounded_ticks = 0)
+  assert (game.lock_delay.elapsed_ticks = 0)
 
 let test_airborne_moves_do_not_consume_lock_resets () =
   let game = Tetris.Game.create ~first_piece:O ~next_piece:I () in
   let game = Tetris.Game.apply_action game Move_left in
-  assert (game.lock_resets = 0)
+  assert (game.lock_delay.reset_count = 0)
 
 let test_lock_delay_resets_are_capped () =
   let game = game_with_piece_at_the_floor () in
@@ -118,12 +118,12 @@ let test_lock_delay_resets_are_capped () =
       let action = if index % 2 = 0 then Move_left else Move_right in
       Tetris.Game.apply_action game action)
   in
-  assert (game.lock_resets = Tetris.Game.max_lock_resets);
-  assert (game.grounded_ticks = 0);
+  assert (game.lock_delay.reset_count = Tetris.Game.max_lock_resets);
+  assert (game.lock_delay.elapsed_ticks = 0);
   let game = Tetris.Game.apply_action game Tick in
-  assert (game.grounded_ticks = 1);
+  assert (game.lock_delay.elapsed_ticks = 1);
   let game = Tetris.Game.apply_action game Move_left in
-  assert (game.grounded_ticks = 1);
+  assert (game.lock_delay.elapsed_ticks = 1);
   let game = Tetris.Game.apply_action game Tick in
   assert (match game.active_piece.kind with I -> true | _ -> false)
 

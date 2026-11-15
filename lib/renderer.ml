@@ -6,10 +6,6 @@ let filled_cell = "██"
 let ghost_cell = "░░"
 let empty_cell = "  "
 
-let phase_to_string = function
-  | Playing -> "Playing"
-  | Game_over -> "Game over"
-
 let is_piece_square piece coordinate =
   List.exists (Piece.squares piece) ~f:(fun square ->
     square.column = coordinate.column && square.row = coordinate.row)
@@ -64,13 +60,13 @@ let render_next_piece kind =
 
 let empty_piece_preview = List.init 2 ~f:(fun _ -> String.make (4 * cell_width) ' ')
 
-let render_held_piece = function
+let render_piece_preview = function
   | None -> empty_piece_preview
   | Some kind -> render_next_piece kind
 
 let sidebar_lines (game : Game.t) =
-  let next_piece = render_next_piece game.next_piece in
-  let held_piece = render_held_piece game.held_piece in
+  let next_piece = render_piece_preview (Some game.next_piece) in
+  let held_piece = render_piece_preview game.held_piece in
   [ "HOLD (C)"
   ; List.nth_exn held_piece 0
   ; List.nth_exn held_piece 1
