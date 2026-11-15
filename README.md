@@ -27,7 +27,7 @@ The game runs in an alternate terminal screen. Press Esc to leave it.
 
 - 10×20 visible playfield with a spawn buffer
 - Seven-bag, seeded piece randomizer
-- Collision detection, hard and soft drop, locking, line clears, and scoring
+- Collision detection, hard and soft drop, lock delay, line clears, and scoring
 
 ## Test and build
 

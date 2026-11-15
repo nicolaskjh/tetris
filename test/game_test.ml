@@ -48,13 +48,39 @@ let test_preview_advances_after_a_piece_locks () =
   let game = Tetris.Game.apply_action game Tetris.Types.Hard_drop in
   assert (same_piece game.next_piece expected_preview)
 
-let test_tick_locks_a_piece_at_the_floor () =
+let game_with_piece_at_the_floor () =
   let game = Tetris.Game.create ~first_piece:Tetris.Types.O ~next_piece:Tetris.Types.I () in
   let active_piece = Tetris.Piece.move game.active_piece ~columns:0 ~rows:20 in
-  let game = { game with active_piece } in
+  { game with active_piece }
+
+let test_tick_starts_lock_delay_at_the_floor () =
+  let game = game_with_piece_at_the_floor () in
+  let game = Tetris.Game.apply_action game Tetris.Types.Tick in
+  assert (match game.active_piece.kind with Tetris.Types.O -> true | _ -> false);
+  assert (game.grounded_ticks = 1);
+  assert (Tetris.Board.is_empty game.board { Tetris.Types.column = 4; row = 19 })
+
+let test_second_tick_locks_a_piece_at_the_floor () =
+  let game = game_with_piece_at_the_floor () in
+  let game = Tetris.Game.apply_action game Tetris.Types.Tick in
   let game = Tetris.Game.apply_action game Tetris.Types.Tick in
   assert (match game.active_piece.kind with Tetris.Types.I -> true | _ -> false);
   assert (not (Tetris.Board.is_empty game.board { Tetris.Types.column = 4; row = 19 }))
+
+let test_successful_move_resets_lock_delay () =
+  let game = game_with_piece_at_the_floor () in
+  let game = Tetris.Game.apply_action game Tetris.Types.Tick in
+  let game = Tetris.Game.apply_action game Tetris.Types.Move_left in
+  assert (game.grounded_ticks = 0);
+  let game = Tetris.Game.apply_action game Tetris.Types.Tick in
+  assert (match game.active_piece.kind with Tetris.Types.O -> true | _ -> false);
+  assert (game.grounded_ticks = 1)
+
+let test_blocked_soft_drop_does_not_advance_lock_delay () =
+  let game = game_with_piece_at_the_floor () in
+  let game = Tetris.Game.apply_action game Tetris.Types.Soft_drop in
+  assert (match game.active_piece.kind with Tetris.Types.O -> true | _ -> false);
+  assert (game.grounded_ticks = 0)
 
 let points_for_lines = function
   | 1 -> 100
@@ -79,6 +105,7 @@ let test_scoring_for_line_clears () =
     in
     let game = { game with board; active_piece } in
     let game = Tetris.Game.apply_action game Tetris.Types.Tick in
+    let game = Tetris.Game.apply_action game Tetris.Types.Tick in
     assert (game.lines_cleared = line_count);
     assert (game.score = points_for_lines line_count))
 
@@ -88,5 +115,8 @@ let () =
   test_hard_drop_locks_and_spawns_next_piece ();
   test_blocked_spawn_ends_the_game ();
   test_preview_advances_after_a_piece_locks ();
-  test_tick_locks_a_piece_at_the_floor ();
+  test_tick_starts_lock_delay_at_the_floor ();
+  test_second_tick_locks_a_piece_at_the_floor ();
+  test_successful_move_resets_lock_delay ();
+  test_blocked_soft_drop_does_not_advance_lock_delay ();
   test_scoring_for_line_clears ()

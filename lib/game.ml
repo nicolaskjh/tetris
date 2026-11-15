@@ -8,8 +8,11 @@ type t =
   ; randomizer : Randomizer.t
   ; score : int
   ; lines_cleared : int
+  ; grounded_ticks : int
   ; phase : phase
   }
+
+let lock_delay_ticks = 2
 
 let create ?(seed = 1) ?first_piece ?next_piece () =
   let randomizer = Randomizer.create ~seed in
@@ -23,6 +26,7 @@ let create ?(seed = 1) ?first_piece ?next_piece () =
   ; randomizer
   ; score = 0
   ; lines_cleared = 0
+  ; grounded_ticks = 0
   ; phase = Playing
   }
 
@@ -30,12 +34,21 @@ let try_move state ~columns ~rows =
   let active_piece = Piece.move state.active_piece ~columns ~rows in
   if Board.can_place state.board active_piece then Some { state with active_piece } else None
 
+let reset_lock_delay state = { state with grounded_ticks = 0 }
+
 let move_if_possible state ~columns ~rows =
-  Option.value (try_move state ~columns ~rows) ~default:state
+  match try_move state ~columns ~rows with
+  | Some moved -> reset_lock_delay moved
+  | None -> state
 
 let try_rotate state =
   let active_piece = Piece.rotate_clockwise state.active_piece in
-  if Board.can_place state.board active_piece then { state with active_piece } else state
+  if Board.can_place state.board active_piece then Some { state with active_piece } else None
+
+let rotate_if_possible state =
+  match try_rotate state with
+  | Some rotated -> reset_lock_delay rotated
+  | None -> state
 
 let points_for_lines = function
   | 1 -> 100
@@ -56,13 +69,16 @@ let lock_piece state =
   ; randomizer
   ; score = state.score + points_for_lines cleared_lines
   ; lines_cleared = state.lines_cleared + cleared_lines
+  ; grounded_ticks = 0
   ; phase
   }
 
 let move_down_or_lock state =
   match try_move state ~columns:0 ~rows:1 with
-  | Some moved -> moved
-  | None -> lock_piece state
+  | Some moved -> reset_lock_delay moved
+  | None ->
+      let grounded_ticks = state.grounded_ticks + 1 in
+      if grounded_ticks >= lock_delay_ticks then lock_piece state else { state with grounded_ticks }
 
 let apply_action state action =
   match state.phase with
@@ -71,8 +87,9 @@ let apply_action state action =
       (match action with
        | Move_left -> move_if_possible state ~columns:(-1) ~rows:0
        | Move_right -> move_if_possible state ~columns:1 ~rows:0
-       | Rotate_clockwise -> try_rotate state
-       | Soft_drop | Tick -> move_down_or_lock state
+       | Rotate_clockwise -> rotate_if_possible state
+       | Soft_drop -> move_if_possible state ~columns:0 ~rows:1
+       | Tick -> move_down_or_lock state
        | Hard_drop ->
       let rec fall state =
         match try_move state ~columns:0 ~rows:1 with
