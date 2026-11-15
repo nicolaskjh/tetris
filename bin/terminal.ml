@@ -8,6 +8,8 @@ type input_result =
   | Ignored
   | End_of_input
 
+let escape_timeout = Time_float.Span.of_sec 0.05
+
 let create () = { saved_settings = None }
 
 let enter_game_screen () = printf "\027[?1049h\027[?25l%!"
@@ -32,16 +34,19 @@ let restore terminal =
 let redraw game = printf "\027[H\027[J%s%!" (Tetris.Renderer.render game)
 
 let read_arrow_input () =
-  Deferred.bind (Reader.read_char (Lazy.force Reader.stdin)) ~f:(function
-    | `Eof -> Deferred.return End_of_input
-    | `Ok '[' ->
-        Deferred.map (Reader.read_char (Lazy.force Reader.stdin)) ~f:(function
-          | `Eof -> End_of_input
-          | `Ok arrow ->
-              (match Tetris.Controls.command_of_arrow arrow with
-               | Some command -> Command command
-               | None -> Ignored))
-    | `Ok _ -> Deferred.return Ignored)
+  Deferred.bind
+    (Clock.with_timeout escape_timeout (Reader.read_char (Lazy.force Reader.stdin)))
+    ~f:(function
+      | `Timeout -> Deferred.return (Command Quit)
+      | `Result `Eof -> Deferred.return End_of_input
+      | `Result (`Ok '[') ->
+          Deferred.map (Reader.read_char (Lazy.force Reader.stdin)) ~f:(function
+            | `Eof -> End_of_input
+            | `Ok arrow ->
+                (match Tetris.Controls.command_of_arrow arrow with
+                 | Some command -> Command command
+                 | None -> Ignored))
+      | `Result (`Ok _) -> Deferred.return Ignored)
 
 let read_input () =
   Deferred.bind (Reader.read_char (Lazy.force Reader.stdin)) ~f:(function
