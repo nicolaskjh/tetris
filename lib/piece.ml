@@ -53,3 +53,63 @@ let rotate_clockwise piece =
     | Left -> Spawn
   in
   { piece with rotation }
+
+let clockwise_kicks piece =
+  match piece.kind, piece.rotation with
+  | O, _ -> [ { column = 0; row = 0 } ]
+  | (J | L | S | T | Z), Spawn ->
+      [ { column = 0; row = 0 }
+      ; { column = -1; row = 0 }
+      ; { column = -1; row = -1 }
+      ; { column = 0; row = 2 }
+      ; { column = -1; row = 2 }
+      ]
+  | (J | L | S | T | Z), Right ->
+      [ { column = 0; row = 0 }
+      ; { column = 1; row = 0 }
+      ; { column = 1; row = 1 }
+      ; { column = 0; row = -2 }
+      ; { column = 1; row = -2 }
+      ]
+  | (J | L | S | T | Z), Reverse ->
+      [ { column = 0; row = 0 }
+      ; { column = 1; row = 0 }
+      ; { column = 1; row = -1 }
+      ; { column = 0; row = 2 }
+      ; { column = 1; row = 2 }
+      ]
+  | (J | L | S | T | Z), Left ->
+      [ { column = 0; row = 0 }
+      ; { column = -1; row = 0 }
+      ; { column = -1; row = 1 }
+      ; { column = 0; row = -2 }
+      ; { column = -1; row = -2 }
+      ]
+  | I, Spawn ->
+      [ { column = 0; row = 0 }
+      ; { column = -2; row = 0 }
+      ; { column = 1; row = 0 }
+      ; { column = -2; row = 1 }
+      ; { column = 1; row = -2 }
+      ]
+  | I, Right ->
+      [ { column = 0; row = 0 }
+      ; { column = -1; row = 0 }
+      ; { column = 2; row = 0 }
+      ; { column = -1; row = -2 }
+      ; { column = 2; row = 1 }
+      ]
+  | I, Reverse ->
+      [ { column = 0; row = 0 }
+      ; { column = 2; row = 0 }
+      ; { column = -1; row = 0 }
+      ; { column = 2; row = -1 }
+      ; { column = -1; row = 2 }
+      ]
+  | I, Left ->
+      [ { column = 0; row = 0 }
+      ; { column = 1; row = 0 }
+      ; { column = -2; row = 0 }
+      ; { column = 1; row = 2 }
+      ; { column = -2; row = -1 }
+      ]

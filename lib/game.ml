@@ -46,8 +46,10 @@ let move_if_possible state ~columns ~rows =
   | None -> state
 
 let try_rotate state =
-  let active_piece = Piece.rotate_clockwise state.active_piece in
-  if Board.can_place state.board active_piece then Some { state with active_piece } else None
+  let rotated_piece = Piece.rotate_clockwise state.active_piece in
+  List.find_map (Piece.clockwise_kicks state.active_piece) ~f:(fun kick ->
+    let active_piece = Piece.move rotated_piece ~columns:kick.column ~rows:kick.row in
+    if Board.can_place state.board active_piece then Some { state with active_piece } else None)
 
 let rotate_if_possible state =
   match try_rotate state with

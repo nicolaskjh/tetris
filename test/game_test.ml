@@ -105,6 +105,47 @@ let test_blocked_soft_drop_does_not_advance_lock_delay () =
   assert (match game.active_piece.kind with Tetris.Types.O -> true | _ -> false);
   assert (game.grounded_ticks = 0)
 
+let test_i_piece_kicks_away_from_the_right_wall () =
+  let game = Tetris.Game.create ~first_piece:I ~next_piece:O () in
+  let game =
+    List.fold (List.range 0 3) ~init:game ~f:(fun game _ ->
+      Tetris.Game.apply_action game Move_right)
+  in
+  let game = Tetris.Game.apply_action game Rotate_clockwise in
+  let game = Tetris.Game.apply_action game Move_right in
+  let game = Tetris.Game.apply_action game Rotate_clockwise in
+  assert (match game.active_piece.rotation with Reverse -> true | _ -> false);
+  assert (game.active_piece.origin.column = 7)
+
+let test_t_piece_kicks_up_from_the_floor () =
+  let game = Tetris.Game.create ~first_piece:T ~next_piece:O () in
+  let game = Tetris.Game.apply_action game Rotate_clockwise in
+  let game = Tetris.Game.apply_action game Rotate_clockwise in
+  let game =
+    List.fold (List.range 0 21) ~init:game ~f:(fun game _ ->
+      Tetris.Game.apply_action game Soft_drop)
+  in
+  let game = Tetris.Game.apply_action game Rotate_clockwise in
+  assert (match game.active_piece.rotation with Left -> true | _ -> false);
+  assert (game.active_piece.origin.column = 5);
+  assert (game.active_piece.origin.row = 18)
+
+let test_rotation_fails_when_every_kick_is_blocked () =
+  let game = Tetris.Game.create ~first_piece:T ~next_piece:O () in
+  let active_piece =
+    { (Tetris.Piece.spawn T) with
+      rotation = Reverse
+    ; origin = { column = 4; row = 19 }
+    }
+  in
+  let board = game.board in
+  board.(Tetris.Board.storage_row 18).(6) <- Filled;
+  let game = { game with board; active_piece } in
+  let game = Tetris.Game.apply_action game Rotate_clockwise in
+  assert (match game.active_piece.rotation with Reverse -> true | _ -> false);
+  assert (game.active_piece.origin.column = 4);
+  assert (game.active_piece.origin.row = 19)
+
 let points_for_lines = function
   | 1 -> 100
   | 2 -> 300
@@ -145,4 +186,7 @@ let () =
   test_second_tick_locks_a_piece_at_the_floor ();
   test_successful_move_resets_lock_delay ();
   test_blocked_soft_drop_does_not_advance_lock_delay ();
+  test_i_piece_kicks_away_from_the_right_wall ();
+  test_t_piece_kicks_up_from_the_floor ();
+  test_rotation_fails_when_every_kick_is_blocked ();
   test_scoring_for_line_clears ()
